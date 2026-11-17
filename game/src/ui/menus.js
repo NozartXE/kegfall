@@ -7,6 +7,8 @@ import {
 import { howtoRows, almanacRows } from '../render/howto.js';
 import { RULE_ICON_IDS, drawRuleIcon } from '../render/ruleicons.js';
 
+const secs = (ticks) => `${Math.round((ticks / TICKS_PER_SECOND) * 10) / 10}s`;
+
 const SCOPE = Object.freeze([
   `${KEGS.length} KEG KINDS`,
   `${ENEMIES.length - 2} SOOTKIN + THE COLOSSUS`,
@@ -32,7 +34,6 @@ const KEYCAPS = Object.freeze([
 
 const $ = (id) => (typeof document !== 'undefined' ? document.getElementById(id) : null);
 
-const secs = (ticks) => `${Math.round((ticks / TICKS_PER_SECOND) * 10) / 10}s`;
 const pct = (value) => `${Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100)}%`;
 const commas = (value) => Math.max(0, Math.round(Number(value) || 0)).toLocaleString('en-US');
 
