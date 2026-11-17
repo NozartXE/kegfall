@@ -76,6 +76,17 @@ export function hudButtons() {
   return BUTTONS.map((button) => ({ id: button.id, x: button.x, y: button.y, w: button.w, h: button.h }));
 }
 
+const BUILD_CARD_W = 148;
+const BUILD_CARD_COUNT = 6;
+
+export function buildBarCards() {
+  const gap = (928 - BUILD_CARD_W * BUILD_CARD_COUNT) / 5;
+  return KEGS.map((def, i) => {
+    const x = 176 + i * (BUILD_CARD_W + gap);
+    return { id: def.key, index: i, x, y: 744, w: BUILD_CARD_W, h: 56, x2: x + BUILD_CARD_W, y2: 800 };
+  });
+}
+
 const num = (value) => {
   const n = Number(value);
   return Math.round(Number.isFinite(n) ? n : 0).toLocaleString('en-US');
