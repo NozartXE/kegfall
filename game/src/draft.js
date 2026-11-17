@@ -9,8 +9,7 @@ export function applyCharm(state, key) {
   const def = DEFS.get(key);
   if (!state || !def) return false;
   const list = owned(state);
-  if (list.includes(key)) return false;
-  list.push(key);
+  if (!list.includes(key)) list.push(key);
   const mods = state.mods || (state.mods = {});
   switch (key) {
     case 'wideblast':
@@ -62,7 +61,7 @@ export function rollOffers(state) {
   const have = owned(state);
   const fresh = CHARMS.filter((def) => !have.includes(def.key));
   const pool = fresh.slice();
-  for (const def of CHARMS) if (!pool.includes(def)) pool.push(def);
+  for (const def of CHARMS) if (!pool.includes(def) && !have.includes(def.key)) pool.push(def);
 
   const picks = [];
   while (picks.length < CHARM_CHOICES && pool.length > 0) {
@@ -71,6 +70,14 @@ export function rollOffers(state) {
   }
   state.offers = picks;
   return picks;
+}
+
+// Every entry into draft must leave three offers; if stepRun finds the mode with none, roll here.
+export function ensureOffers(state) {
+  if (!state) return [];
+  const offers = Array.isArray(state.offers) ? state.offers : (state.offers = []);
+  if (offers.length !== CHARM_CHOICES) rollOffers(state);
+  return state.offers;
 }
 
 export function rerollDraft(state) {

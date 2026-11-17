@@ -54,6 +54,7 @@ export function removeEnemy(state, enemy) {
 export function stepEnemies(state) {
   const breaches = [];
   if (!state || !Array.isArray(state.enemies)) return breaches;
+  sweepCorpses(state);
   const mouth = vaultMouth();
   const frost = state.frostFields || [];
   const burns = state.burnFields || [];
@@ -112,6 +113,20 @@ export function stepEnemies(state) {
 
   for (const e of falling) removeEnemy(state, e);
   return breaches;
+}
+
+function sweepCorpses(state) {
+  const list = state.enemies;
+  let kept = null;
+  for (let i = 0; i < list.length; i += 1) {
+    if (!list[i] || list[i].hp > 0) {
+      if (kept) kept.push(list[i]);
+      continue;
+    }
+    if (!kept) kept = list.slice(0, i);
+    if (state.byId) state.byId.delete(list[i].id);
+  }
+  if (kept) state.enemies = kept;
 }
 
 export function aliveCount(state) {

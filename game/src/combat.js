@@ -29,9 +29,9 @@ function pushFloater(state, x, y, text, big) {
   if (typeof state.floater === 'function') state.floater(x, y, text);
 }
 
-function blastAt(state, x, y, kind, radiusCells, damage) {
+function blastAt(state, x, y, kind, radiusCells, damage, origin) {
   if (!detonateFn) return false;
-  detonateFn(state, { x, y, kind, radiusCells, damage });
+  detonateFn(state, { x, y, kind, radiusCells, damage, origin });
   return true;
 }
 
@@ -54,7 +54,7 @@ export function killEnemy(state, enemy) {
   if (def.key === 'imp') {
     enemy.hp = 0;
     if (registerChainFn) registerChainFn(state);
-    blastAt(state, enemy.x, enemy.y, 'imp', def.deathBlastRadius, def.deathBlastDamage);
+    blastAt(state, enemy.x, enemy.y, 'imp', def.deathBlastRadius, def.deathBlastDamage, enemy);
   } else if (def.key === 'twinsack') {
     const splits = def.splits || 2;
     for (let i = 0; i < splits; i += 1) {
@@ -64,7 +64,7 @@ export function killEnemy(state, enemy) {
   } else if (def.key === 'colossus') {
     stats.bossKilled = true;
     pushEvent(state, { type: 'bossdown', x: enemy.x, y: enemy.y });
-    blastAt(state, enemy.x, enemy.y, 'mega', def.megaKegRadius, def.megaKegDamage);
+    blastAt(state, enemy.x, enemy.y, 'mega', def.megaKegRadius, def.megaKegDamage, enemy);
   }
 }
 
@@ -84,7 +84,23 @@ export function damageEnemy(state, enemy, amount, source) {
   if (enemy.hp <= 0) {
     enemy.hp = 0;
     killEnemy(state, enemy);
+    if (Array.isArray(state.deadEnemies) && !state.deadEnemies.includes(enemy)) state.deadEnemies.push(enemy);
   }
+}
+
+// Called once the blast that dealt the damage is done: corpses leave the array so later enemies in
+// the same loop are untouched, and spawns from death side effects survive until the next blast.
+export function sweepDead(state) {
+  if (!state || !Array.isArray(state.deadEnemies)) return 0;
+  const dead = state.deadEnemies;
+  state.deadEnemies = [];
+  let removed = 0;
+  for (const enemy of dead) {
+    if (!enemy || enemy.hp > 0) continue;
+    removeEnemy(state, enemy);
+    removed += 1;
+  }
+  return removed;
 }
 
 export function strikeAt(state, x, y) {

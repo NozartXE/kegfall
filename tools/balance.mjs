@@ -26,7 +26,10 @@ function runOut(bot, seed, diffKey, maxTicks = MAX_TICKS) {
 
 function idleRun(seed, diffKey, maxTicks = MAX_TICKS) {
   const state = sim.createRun(seed, diffKey);
-  while (state.mode !== 'won' && state.mode !== 'lost' && state.tick < maxTicks) sim.stepRun(state);
+  while (state.mode !== 'won' && state.mode !== 'lost' && state.tick < maxTicks) {
+    if (state.mode === 'draft') sim.chooseCharm(state, 0);
+    sim.stepRun(state);
+  }
   return state;
 }
 

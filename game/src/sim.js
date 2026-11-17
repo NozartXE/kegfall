@@ -14,7 +14,7 @@ import { BARRAGES, buildSpawnQueue } from './waves.js';
 import { spawnEnemy, stepEnemies, aliveCount } from './enemies.js';
 import { detonate, igniteKeg, stepBlasts } from './blasts.js';
 import { strikeAt, bindDetonate } from './combat.js';
-import { rollOffers, applyCharm } from './draft.js';
+import { rollOffers, applyCharm, ensureOffers } from './draft.js';
 import { checkFeats } from './feats.js';
 
 bindDetonate(detonate);
@@ -213,6 +213,7 @@ export function stepRun(state) {
   }
 
   if (state.mode === 'draft') {
+    ensureOffers(state);
     stepFloaters(state);
     return;
   }
@@ -306,20 +307,18 @@ export function strikeAtPos(state, x, y) {
 
 export function chooseCharm(state, offerIndex) {
   if (!state || state.mode !== 'draft') return false;
-  const offers = Array.isArray(state.offers) ? state.offers : [];
+  const offers = ensureOffers(state);
   const idx = Math.floor(Number(offerIndex));
   if (!Number.isInteger(idx) || idx < 0 || idx >= offers.length) return false;
-  if (!applyCharm(state, offers[idx])) return false;
+  applyCharm(state, offers[idx]);
   state.offers = [];
   startBarrage(state, (state.barrage || 0) + 1, 'barrage');
   return true;
 }
 
+// A draft always resolves into a charm: skipping takes the first offer rather than stranding the run.
 export function skipDraft(state) {
-  if (!state || state.mode !== 'draft') return false;
-  state.offers = [];
-  startBarrage(state, (state.barrage || 0) + 1, 'barrage');
-  return true;
+  return chooseCharm(state, 0);
 }
 
 export function hashRun(state) {

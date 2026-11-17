@@ -9,7 +9,7 @@ import {
   TICKS_PER_SECOND,
   BLAST_LEVEL_MUL,
 } from './config.js';
-import { damageEnemy } from './combat.js';
+import { damageEnemy, sweepDead } from './combat.js';
 
 const DEFS = new Map(KEGS.map((def) => [def.key, def]));
 const defFor = (keg) => keg.def || DEFS.get(keg.kind) || DEFS.get('powder');
@@ -82,7 +82,7 @@ export function detonate(state, src) {
   let hits = 0;
   if (Array.isArray(state.enemies)) {
     for (const enemy of state.enemies) {
-      if (!enemy || enemy.hp <= 0) continue;
+      if (!enemy || enemy.hp <= 0 || enemy === src.origin) continue;
       const dist = Math.hypot(enemy.x - x, enemy.y - y);
       if (dist > radiusPx) continue;
       const falloff = dist <= radiusPx * 0.6 ? 1 : 0.5;
@@ -105,6 +105,7 @@ export function detonate(state, src) {
     if (ticks > 0) addField(state, { kind: fieldKind, x, y, radiusPx, ticksLeft: ticks });
   }
 
+  sweepDead(state);
   return hits;
 }
 
