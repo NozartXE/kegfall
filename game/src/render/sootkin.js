@@ -338,7 +338,7 @@ function drawMegaKeg(ctx, x, y, r, tick) {
   ctx.restore();
 }
 
-function drawColossus(ctx, r, tick, phase, hpRatio) {
+export function drawColossus(ctx, r, tick, phase, hpRatio) {
   const stomp = Math.sin(tick * 0.045 + phase * TAU);
   const bob = Math.max(0, stomp) * r * 0.05;
   ctx.translate(0, -bob);
