@@ -334,7 +334,7 @@ export function drawKegs(ctx, state, view) {
   const tick = Number.isFinite(state.tick) ? state.tick : 0;
   for (const keg of state.kegs) {
     if (!keg || !Number.isFinite(keg.x) || !Number.isFinite(keg.y)) continue;
-    const def = KEG_DEFS.get(keg.kind) || KEG_DEFS.get('powder');
+    const def = keg.def || KEG_DEFS.get(keg.kind) || KEG_DEFS.get('powder');
     const level = Math.max(1, Math.min(3, Math.floor(keg.level || 1)));
     const lit = Number.isFinite(keg.fuse) && keg.fuse >= 0;
     const chained = lit && keg.fuse <= 16;
