@@ -20,6 +20,10 @@ const IGNITE_RADIUS_MUL = 1.1;
 const STRIKE_HITS = 5;
 const STRIKE_CELLS = STRIKE_RADIUS * CELL;
 const MAX_SHOT_TICKS = 30000;
+const MIN_DENSE_ENEMIES = 10;
+const MIN_TRANSITION_AGE = 150;
+const MIN_DENSE_CHAIN = 5;
+const FALLBACK_MIN_ENEMIES = 6;
 const DRAFT_PRIORITY = Object.freeze(['wideblast', 'longchain', 'quickfuse', 'tightbudget', 'chainledger']);
 
 const isAlive = (enemy) => Boolean(enemy) && enemy.hp > 0;
@@ -136,28 +140,49 @@ function botPlay(seed, diffKey, stopAt = null) {
 }
 
 function frameScore(state) {
-  const detonations = (state.events || []).filter((event) => event && event.type === 'detonate').length;
-  return aliveEnemies(state).length * 2
-    + (state.floaters || []).length * 3
+  return aliveEnemies(state).length * 4
     + (state.chain || 0) * 6
-    + detonations * 4;
+    + (state.floaters || []).length * 3;
 }
 
-function stagePlay() {
-  const probe = sim.createRun(SEED, DIFF);
+// Dense mid-cascade only: no barrage-clear / shift-change peaks, no empty-field blast rings.
+function isDenseFrame(state, ticksSinceTransition) {
+  return state.mode === 'play'
+    && aliveEnemies(state).length >= MIN_DENSE_ENEMIES
+    && ticksSinceTransition >= MIN_TRANSITION_AGE
+    && (state.chain || 0) >= MIN_DENSE_CHAIN;
+}
+
+function stagePlay(seed, diffKey) {
+  const probe = sim.createRun(seed, diffKey);
   let bestTick = 0;
   let bestScore = -1;
+  let bestFallbackTick = 0;
+  let bestFallbackScore = -1;
+  let lastMode = probe.mode;
+  let lastTransitionTick = 0;
   while (probe.tick < MAX_SHOT_TICKS && probe.mode !== 'won' && probe.mode !== 'lost') {
     botStep(probe);
+    if (probe.mode !== lastMode) {
+      lastMode = probe.mode;
+      lastTransitionTick = probe.tick;
+    }
+    const ticksSinceTransition = probe.tick - lastTransitionTick;
+    const enemiesAlive = aliveEnemies(probe).length;
     const score = frameScore(probe);
-    if (score > bestScore) {
+    if (isDenseFrame(probe, ticksSinceTransition) && score > bestScore) {
       bestScore = score;
       bestTick = probe.tick;
     }
+    if (enemiesAlive >= FALLBACK_MIN_ENEMIES && score > bestFallbackScore) {
+      bestFallbackScore = score;
+      bestFallbackTick = probe.tick;
+    }
   }
 
-  const state = sim.createRun(SEED, DIFF);
-  while (state.tick < bestTick && state.mode !== 'won' && state.mode !== 'lost') botStep(state);
+  const chosenTick = bestTick > 0 ? bestTick : bestFallbackTick;
+  const state = sim.createRun(seed, diffKey);
+  while (state.tick < chosenTick && state.mode !== 'won' && state.mode !== 'lost') botStep(state);
   return state;
 }
 
@@ -247,7 +272,7 @@ export function installTesthook(app) {
   if (params.test) app.test = true;
 
   if (params.shot === 'play') {
-    app.state = stagePlay();
+    app.state = stagePlay(params.seed, params.diff);
     app.view.tool = 'powder';
     app.mode = 'play';
     app.staged = true;

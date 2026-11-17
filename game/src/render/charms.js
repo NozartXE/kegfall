@@ -343,8 +343,6 @@ export function drawDraft(ctx, state, view) {
   const rects = draftCardRects();
 
   ctx.save();
-  ctx.fillStyle = 'rgba(14,12,10,0.62)';
-  ctx.fillRect(0, 0, 1280, 800);
 
   text(ctx, 'THE SHIFT TURNS - PICK 1', 64, DRAFT_LAYOUT.titleY, 46, CHALK, { maxWidth: 800 });
   const sub = `BARRAGE ${barrageIdx + 1} - ${barrage ? barrage.name : 'THE ASH GATES OPEN'}`;
@@ -427,29 +425,48 @@ export function drawDraft(ctx, state, view) {
   ctx.lineWidth = 3;
   ctx.strokeStyle = INK;
   ctx.stroke();
-  text(ctx, `INCOMING BARRAGE ${barrageIdx + 1}:`, fx + 16, fy + 22, 19, INK);
+  text(ctx, `INCOMING BARRAGE ${barrageIdx + 1}:`, fx + 16, fy + 18, 18, INK);
 
   const forecast = barrageForecast(barrageIdx);
   const entries = forecast.map((row) => {
     const def = ENEMY_DEFS.get(row.kind) || { name: row.kind.toUpperCase(), trait: 'Unknown Sootkin' };
-    return { row, def, label: `${def.name} x${row.count}`, w: 24 + Math.round(textWidth(ctx, `${def.name} x${row.count}`, 17)) };
+    return { row, def, label: `${def.name} x${row.count}`, w: 24 + Math.round(textWidth(ctx, `${def.name} x${row.count}`, 15)) };
   });
-  let topKind = forecast[0];
-  for (const row of forecast) if (!topKind || row.count > topKind.count) topKind = row;
-  const dangerText = topKind
-    ? `DANGER: ${entries.find((entry) => entry.row === topKind).def.trait} (x${topKind.count}).`
+  // Danger names the kind carrying the most total HP this barrage, not the largest headcount.
+  let topEntry = null;
+  let topHp = -1;
+  for (const entry of entries) {
+    const total = (Number(entry.def.hp) || 0) * (Number(entry.row.count) || 0);
+    if (total > topHp) {
+      topHp = total;
+      topEntry = entry;
+    }
+  }
+  const dangerText = topEntry
+    ? `DANGER: ${topEntry.def.name} - ${topEntry.def.trait || 'Sootkin surge'} (x${topEntry.row.count}).`
     : 'DANGER: none scouted.';
-  const dangerW = Math.min(fw - 48, Math.round(textWidth(ctx, dangerText, 16)) + 4);
-  const rowY = fy + fh - 21;
+  let dangerW = Math.min(fw * 0.42, Math.round(textWidth(ctx, dangerText, 13)) + 4);
+  ctx.font = `800 13px ${CONDENSED}`;
+  if (ctx.measureText(dangerText).width > dangerW) dangerW = Math.max(240, Math.min(fw * 0.46, fw - 96));
+  ctx.font = `800 13px ${CONDENSED}`;
+  const dangerLines = wrapText(ctx, dangerText, dangerW - 6).slice(0, 4);
+
+  let rowY = fy + 40;
   let rowX = fx + 16;
   const limitX = fx + fw - dangerW - 24;
   for (const entry of entries) {
-    if (rowX > limitX && rowX > fx + 16) break;
-    kindGlyph(ctx, entry.row.kind, rowX + 9, rowY, 9, entry.def.color || EMBER);
-    text(ctx, entry.label, rowX + 24, rowY, 17, INK);
-    rowX += entry.w + 26;
+    if (rowX + entry.w > limitX && rowX > fx + 16) {
+      rowX = fx + 16;
+      rowY += 18;
+      if (rowY > fy + fh - 8) break;
+    }
+    kindGlyph(ctx, entry.row.kind, rowX + 8, rowY, 8, entry.def.color || EMBER);
+    text(ctx, entry.label, rowX + 22, rowY, 15, INK);
+    rowX += entry.w + 22;
   }
-  text(ctx, dangerText, fx + fw - 16, rowY, 16, palette.vault, { align: 'right', maxWidth: dangerW });
+  dangerLines.forEach((line, i) => {
+    text(ctx, line, fx + fw - 16, fy + 36 + i * 13, 13, palette.vault, { align: 'right', maxWidth: dangerW });
+  });
 
   const rr = rects.reroll;
   const affordable = spark >= REROLL_COST;
@@ -467,7 +484,7 @@ export function drawDraft(ctx, state, view) {
     text(ctx, String(spark), rr.x + rr.w - 42, rr.y + rr.h / 2, 18, held.text, { align: 'right' });
   }
 
-  const shiftIdx = Math.max(0, Math.min(SHIFTS.length - 1, (barrage ? barrage.shift : 1) - 1));
+  const shiftIdx = Math.max(0, Math.min(SHIFTS.length - 1, (barrage ? barrage.shift : (Number(state.shift) || 1)) - 1));
   const shiftName = SHIFTS[shiftIdx] ? SHIFTS[shiftIdx].name : 'DAWN';
   const shot = forecast.reduce((sum, row) => sum + row.count, 0);
   const aside = `${shot} SOOTKIN - SHIFT ${shiftIdx + 1} ${shiftName} - ${

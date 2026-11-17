@@ -207,13 +207,13 @@ function drawObjective(ctx, state) {
   const y = 8;
   ctx.save();
   ctx.globalAlpha = 0.94;
-  rect(ctx, x + 2, y + 3, 544, 52, 6);
+  rect(ctx, x + 2, y + 3, 482, 50, 6);
   ctx.fillStyle = DEEP;
   ctx.fill();
   ctx.strokeStyle = INK;
   ctx.lineWidth = 1;
   ctx.stroke();
-  rect(ctx, x, y, 544, 52, 6);
+  rect(ctx, x, y, 482, 50, 6);
   ctx.fillStyle = 'rgba(247,243,232,0.92)';
   ctx.fill();
   ctx.strokeStyle = TEAL;
@@ -223,26 +223,26 @@ function drawObjective(ctx, state) {
 
   ctx.save();
   const line1 = `WIN: HOLD ${remaining} MORE BARRAGES`;
-  ctx.font = font(20, 800);
+  ctx.font = font(18, 800);
   ctx.fillStyle = INK;
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'left';
-  const size = fitFont(ctx, line1, 510, 20, 800, CONDENSED);
+  const size = fitFont(ctx, line1, 458, 18, 800, CONDENSED);
   ctx.font = font(size, 800);
   ctx.fillText(line1, x + 12, y + 23);
-  label(ctx, 'LOSE: THE VAULT RUNS DRY', x + 12, y + 38, 16, 800, RED);
-  rect(ctx, x + 12, y + 44, 520, 1, 0);
+  label(ctx, 'LOSE: THE VAULT RUNS DRY', x + 12, y + 35, 11, 800, RED);
+  rect(ctx, x + 12, y + 41, 458, 1, 0);
   ctx.fillStyle = 'rgba(35,32,27,0.18)';
   ctx.fill();
   const line3 = `SHIFT ${state.shift || 1} - ${shiftName(state.shift)} - GATES: ${gateNames(state.shift)}`;
-  fitted(ctx, line3, x + 12, y + 50, 510, 13, STONE, 800);
+  fitted(ctx, line3, x + 12, y + 47, 458, 10, STONE, 800);
   ctx.restore();
 }
 
 function drawVault(ctx, state) {
-  const x = 570;
+  const x = 508;
   const y = 8;
-  const w = 190;
+  const w = 212;
   const max = Math.max(1, Math.floor(Number(state.vaultMax) || VAULT_MAX));
   const vault = Math.max(0, Math.min(max, Number(state.vault) || 0));
   const tick = Number(state.tick) || 0;
@@ -258,12 +258,15 @@ function drawVault(ctx, state) {
   ctx.stroke();
 
   label(ctx, 'VAULT', x + 10, y + 14, 15, 800, INK);
-  const pipW = Math.max(12, Math.min(16, (w - 20) / max));
-  const lastR = Math.max(4.4, Math.min(7, pipW * 0.46));
-  const cx = x + 10 + pipW / 2 + 34;
+  const labelW = 40;
+  const pipsX = x + 10 + labelW;
+  const count = Math.max(1, Math.min(max, 20));
+  const pipW = Math.min(14, (x + w - 10 - pipsX) / count);
+  const lastR = Math.max(3.6, Math.min(6.4, pipW * 0.42));
+  const cx = pipsX + pipW / 2;
   for (let i = 0; i < max; i += 1) {
     const pxc = cx + i * pipW;
-    const cy = y + 17;
+    const cy = y + 16;
     const filled = i < vault;
     const pulsing = filled && i === vault - 1 && vault <= 3;
     const pulse = pulsing ? 0.5 + 0.5 * Math.sin(tick / 5) : 1;
@@ -293,7 +296,7 @@ function drawVault(ctx, state) {
       ctx.stroke();
     }
   }
-  label(ctx, 'DRY = RUN LOST', x + 10, y + 42, 11, 800, vault <= 3 ? RED : INK);
+  label(ctx, 'DRY = RUN LOST', x + 10, y + 40, 10, 800, vault <= 3 ? RED : INK);
   ctx.restore();
 }
 
@@ -313,30 +316,30 @@ function parseHex(color) {
 }
 
 function drawChain(ctx, state) {
-  const rectValue = chainRect || { x: 770, y: 8, w: 240, h: 52 };
+  const rectValue = chainRect || { x: 730, y: 68, w: 222, h: 30 };
   const cx = rectValue.x + rectValue.w / 2;
   const chain = Math.max(0, Math.floor(Number(state.chain) || 0));
   const best = Math.max(0, Math.floor(Number(state.bestChain) || 0), chain);
   const tick = Number(state.tick) || 0;
   ctx.save();
   rect(ctx, rectValue.x, rectValue.y, rectValue.w, rectValue.h, 6);
-  ctx.fillStyle = 'rgba(10,63,67,0.30)';
+  ctx.fillStyle = 'rgba(10,63,67,0.55)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(15,94,99,0.55)';
+  ctx.strokeStyle = 'rgba(217,201,163,0.4)';
   ctx.lineWidth = 1;
   ctx.stroke();
-  const mainY = rectValue.y + rectValue.h * 0.42;
+  const mainY = rectValue.y + rectValue.h / 2;
   if (chain >= 2) {
     const scale = 1 + 0.06 * Math.sin(tick / 4);
     const text = `CHAIN x${num(chain)}`;
     ctx.translate(cx, mainY);
     ctx.scale(scale, scale);
-    ctx.font = font(46, 800);
-    const wSize = fitFont(ctx, text, rectValue.w - 22, 46, 800, CONDENSED);
+    ctx.font = font(22, 800);
+    const wSize = fitFont(ctx, text, rectValue.w - 150, 22, 800, CONDENSED);
     ctx.font = font(wSize, 800);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 4;
     ctx.lineJoin = 'round';
     ctx.strokeStyle = INK;
     ctx.strokeText(text, 0, 0);
@@ -344,18 +347,20 @@ function drawChain(ctx, state) {
     ctx.fillText(text, 0, 0);
     ctx.restore();
     ctx.save();
-    const glow = 0.25 + 0.2 * Math.sin(tick / 4);
+    const glow = 0.35 + 0.25 * Math.sin(tick / 4);
     ctx.strokeStyle = `rgba(255,194,31,${glow})`;
-    ctx.lineWidth = 2;
-    circle(ctx, cx, mainY, rectValue.w * 0.32);
+    ctx.lineWidth = 1.5;
+    rect(ctx, rectValue.x + 1, rectValue.y + 1, rectValue.w - 2, rectValue.h - 2, 5);
     ctx.stroke();
     ctx.restore();
   } else {
-    ctx.globalAlpha = 0.35;
-    fitted(ctx, 'LIGHT A KEG - START A CHAIN', rectValue.x + 8, mainY, rectValue.w - 16, 20, CHALK, 800, 'center');
+    ctx.globalAlpha = 0.55;
+    fitted(ctx, 'LIGHT A KEG - START A CHAIN', rectValue.x + 8, mainY, rectValue.w - 140, 11, CHALK, 800, 'left');
     ctx.globalAlpha = 1;
   }
-  centered(ctx, `BEST CHAIN x${num(best)}`, cx, rectValue.y + rectValue.h - 13, 14, 800, chain >= 2 ? STONE : CHALK);
+  ctx.save();
+  fitted(ctx, `BEST CHAIN x${num(best)}`, rectValue.x + rectValue.w - 9, mainY, 130, 12, chain >= 2 ? STONE : CHALK, 800, 'right');
+  ctx.restore();
   ctx.restore();
 }
 
@@ -377,17 +382,13 @@ function drawScore(ctx, state) {
   ctx.strokeStyle = TEAL;
   ctx.lineWidth = 2;
   ctx.stroke();
-  const lineH = 16;
-  fitted(ctx, `SCORE ${num(score)}`, right - 10, y, rectValue.w - 20, lineH, INK, 800, 'right');
-  fitted(ctx, `BEST ${num(best)}`, right - 10, y + 17, rectValue.w - 20, lineH, INK, 800, 'right');
-  ctx.font = font(16, 800);
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'right';
-  const sparkText = `SPARK ${num(spark)}`;
-  const sw = Math.min(rectValue.w - 20, ctx.measureText(sparkText).width + 10);
-  ctx.fillStyle = EMBER;
-  ctx.fillText(sparkText, right - 10, y + 34);
-  sparkHex(ctx, right - 10 - sw + 6, y + 34, 4.5, BLAST);
+  const inner = rectValue.w - 20;
+  fitted(ctx, `SCORE ${num(score)}`, right - 10, rectValue.y + 13, inner, 16, INK, 800, 'right');
+  fitted(ctx, `BEST ${num(best)}`, right - 10, rectValue.y + 28, inner, 13, INK, 800, 'right');
+  fitted(ctx, `SPARK ${num(spark)}`, right - 10, rectValue.y + 43, inner, 14, EMBER, 800, 'right');
+  ctx.font = font(14, 800);
+  const sw = Math.min(inner, ctx.measureText(`SPARK ${num(spark)}`).width);
+  sparkHex(ctx, right - 10 - sw - 8, rectValue.y + 43, 4.2, BLAST);
   ctx.restore();
 }
 
@@ -628,8 +629,8 @@ function drawTrack(ctx, state) {
   ctx.strokeStyle = 'rgba(15,94,99,0.45)';
   ctx.lineWidth = 1;
   ctx.stroke();
-  label(ctx, 'BARRAGES', x + 10, y + 14, 14, 800, CHALK);
-  fitted(ctx, `${num(cleared)}/${BARRAGE_COUNT}`, x + 10, y + 14, w - 20, 11, STONE, 800, 'right');
+  label(ctx, 'BARRAGES', x + 10, y + 14, 13, 800, CHALK);
+  fitted(ctx, `${num(cleared)}/${BARRAGE_COUNT}`, x + 84, y + 14, w - 94, 12, STONE, 800, 'right');
   const bandY = [238, 306, 374];
   const names = ['DAWN', 'NOON', 'DUSK'];
   for (let band = 0; band < 3; band += 1) {
@@ -690,7 +691,11 @@ function drawTrack(ctx, state) {
     ctx.restore();
   }
   const more = Math.max(0, BARRAGE_COUNT - cleared);
-  fitted(ctx, `HOLD ${num(more)} MORE`, x + 10, y + h - 12, w - 20, 12, more <= 1 ? BLAST : STONE, 800, 'center');
+  ctx.save();
+  const moreColor = more <= 1 ? BLAST : STONE;
+  fitted(ctx, `HOLD ${num(more)}`, x + 8, y + h - 32, w - 16, 12, moreColor, 800, 'center');
+  fitted(ctx, 'MORE BARRAGES', x + 8, y + h - 18, w - 16, 10, moreColor, 800, 'center');
+  ctx.restore();
   ctx.restore();
 }
 
@@ -789,12 +794,13 @@ function drawKegCard(ctx, def, slot, x, y, w, h, state, view) {
   rect(ctx, x + 26, y + 6, w - 32, 3, 1.5);
   ctx.fillStyle = def.color;
   ctx.fill();
-  fitted(ctx, def.name, x + 7, y + 25, w - 14, 13, INK, 800);
-  ctx.font = font(13, 800);
+  const costText = `${num(cost)}`;
+  ctx.font = font(12, 800);
+  const cw = ctx.measureText(costText).width;
+  fitted(ctx, def.name, x + 7, y + 25, w - 20 - cw - 6, 13, INK, 800);
+  ctx.font = font(12, 800);
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  const costText = `${num(cost)}`;
-  const cw = ctx.measureText(costText).width;
   ctx.fillStyle = spark >= cost ? EMBER : RED;
   ctx.fillText(costText, x + w - 9 - cw, y + 25);
   sparkDot(ctx, x + w - 9 - cw - 7, y + 25, 4, spark >= cost ? BLAST : STONE);
@@ -826,8 +832,8 @@ function drawIgniteCard(ctx, x, y, w, h, state) {
   ctx.lineWidth = 2;
   ctx.stroke();
   centered(ctx, 'IGNITE', x + w / 2, y + 17, 16, 800, BLAST);
-  fitted(ctx, 'CLICK A KEG', x + 8, y + 35, w - 16, 11, CHALK, 800, 'center');
-  fitted(ctx, 'SPACE', x + 8, y + 49, w - 16, 11, CHALK, 800, 'center');
+  fitted(ctx, 'A KEG', x + 6, y + 34, w - 12, 11, CHALK, 800, 'center');
+  fitted(ctx, 'OR SPACE', x + 6, y + 46, w - 12, 10, CHALK, 800, 'center');
   ctx.strokeStyle = 'rgba(255,194,31,0.45)';
   ctx.lineWidth = 1;
   rect(ctx, x + 4, y + 4, w - 8, h - 8, 5);
@@ -847,9 +853,9 @@ function drawStrikeCard(ctx, x, y, w, h, state) {
   ctx.strokeStyle = ready ? EMBER : 'rgba(217,201,163,0.55)';
   ctx.lineWidth = 2;
   ctx.stroke();
-  const cx = x + 19;
+  const cx = x + 16;
   const cy = y + h / 2;
-  circle(ctx, cx, cy, 13);
+  circle(ctx, cx, cy, 12);
   ctx.fillStyle = 'rgba(247,243,232,0.08)';
   ctx.fill();
   ctx.save();
@@ -857,30 +863,34 @@ function drawStrikeCard(ctx, x, y, w, h, state) {
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
-  ctx.arc(cx, cy, 11, -Math.PI / 2, -Math.PI / 2 + TAU * fraction);
+  ctx.arc(cx, cy, 10, -Math.PI / 2, -Math.PI / 2 + TAU * fraction);
   ctx.closePath();
   ctx.fillStyle = ready ? 'rgba(255,122,26,0.45)' : 'rgba(255,194,31,0.22)';
   ctx.fill();
   ctx.stroke();
   ctx.restore();
   centered(ctx, 'F', cx, cy, 12, 800, CHALK);
-  fitted(ctx, 'F - SPARK STRIKE', x + 36, y + 17, w - 42, 13, CHALK, 800);
+  fitted(ctx, 'STRIKE', x + 32, y + 14, w - 37, 12, CHALK, 800);
   const status = ready ? 'READY' : `${(left / 60).toFixed(1)} s`;
-  fitted(ctx, status, x + 36, y + 33, w - 42, 11, ready ? BLAST : STONE, 800);
+  fitted(ctx, status, x + 32, y + 28, w - 37, 11, ready ? BLAST : STONE, 800);
   ctx.save();
-  ctx.globalAlpha = 0.6;
-  fitted(ctx, `REROLL ${num(REROLL_COST)}`, x + 36, y + 47, w - 42, 9, STONE, 700);
+  ctx.globalAlpha = 0.65;
+  fitted(ctx, `REROLL ${num(REROLL_COST)}`, x + 32, y + 42, w - 37, 9, STONE, 700);
   ctx.restore();
   ctx.restore();
 }
 
 function drawBuildBar(ctx, state, view) {
-  const x = 176;
+  const x = 168;
   const y = 744;
-  const w = 928;
+  const w = 944;
   const h = 56;
-  const cardW = 148;
-  const gap = (w - cardW * 6) / 5;
+  const hintW = 140;
+  const cardW = 114;
+  const cardsX = x + hintW + 8;
+  const rightW = 150;
+  const cardsW = w - hintW - 8 - rightW - 8;
+  const gap = (cardsW - cardW * KEGS.length) / Math.max(1, KEGS.length - 1);
   ctx.save();
   rect(ctx, x - 4, y - 4, w + 8, h + 8, 8);
   ctx.fillStyle = INK;
@@ -888,24 +898,19 @@ function drawBuildBar(ctx, state, view) {
   ctx.strokeStyle = TEAL;
   ctx.lineWidth = 1;
   ctx.stroke();
+  fitted(ctx, 'PLACE', x + 10, y + 12, hintW - 16, 11, BLAST, 800);
+  fitted(ctx, 'CLICK OR 1-4', x + 10, y + 24, hintW - 16, 10, CHALK, 700);
+  fitted(ctx, 'UPGRADE', x + 10, y + 37, hintW - 16, 10, STONE, 800);
+  fitted(ctx, 'U', x + 10, y + 48, hintW - 16, 10, CHALK, 700);
   for (let i = 0; i < KEGS.length; i += 1) {
     const def = KEGS[i];
-    drawKegCard(ctx, def, i + 1, x + i * (cardW + gap), y, cardW, h, state, view);
+    drawKegCard(ctx, def, i + 1, cardsX + i * (cardW + gap), y, cardW, h, state, view);
   }
-  drawIgniteCard(ctx, x + 4 * (cardW + gap), y, cardW, h, state);
-  drawStrikeCard(ctx, x + 5 * (cardW + gap), y, cardW, h, state);
+  const igniteW = (rightW - 8) / 2;
+  drawIgniteCard(ctx, x + w - rightW - 4, y, igniteW, h, state);
+  drawStrikeCard(ctx, x + w - rightW - 4 + igniteW + 8, y, igniteW, h, state);
   ctx.restore();
-  fitted(
-    ctx,
-    'CLICK place / ignite - 1-4 keg - U upgrade - F strike - P pause - R restart',
-    x,
-    738 - 6,
-    w,
-    11,
-    'rgba(247,243,232,0.75)',
-    700,
-    'center',
-  );
+  fitted(ctx, 'P pause - R restart - M mute', x + 10, y - 12, hintW + 60, 10, 'rgba(247,243,232,0.7)', 700);
 }
 
 export function drawHud(ctx, state, view) {

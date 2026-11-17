@@ -94,51 +94,151 @@ function statValues(state) {
     { label: 'KILLS', value: commas(stats.kills) },
     { label: 'DETONATIONS', value: commas(stats.detonations) },
     { label: 'BEST CHAIN', value: `x${Math.max(0, Math.round(Number(state.bestChain) || 0))}` },
-    { label: 'BARRAGES HELD', value: `${Math.min(9, Math.max(0, Math.round(Number(stats.barragesCleared) || 0)))}/9` },
+    { label: 'BARRAGES', value: `${Math.min(9, Math.max(0, Math.round(Number(stats.barragesCleared) || 0)))}/9` },
     { label: 'TIME', value: clock(state.tick) },
     { label: 'SPARK EARNED', value: commas(stats.sparkEarned) },
   ];
 }
 
-function drawWonArt(ctx, rect, tick) {
+// Run poster: a dark field carrying a powder keg with a lit fuse and the best-chain medallion; the outcome copy sits under it.
+function drawPosterBase(ctx, rect, tick, variant) {
   ctx.save();
   ctx.beginPath();
   roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, 22);
-  ctx.fillStyle = '#f2e4c4';
+  ctx.fillStyle = '#221b15';
   ctx.fill();
   ctx.clip();
 
-  ctx.fillStyle = 'rgba(255,194,31,0.35)';
+  const sky = ctx.createLinearGradient(rect.x, rect.y, rect.x, rect.y + rect.h);
+  sky.addColorStop(0, variant === 'won' ? '#3c2d1d' : '#2c2320');
+  sky.addColorStop(0.6, '#1b1511');
+  sky.addColorStop(1, '#120e0b');
+  ctx.fillStyle = sky;
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+
+  ctx.fillStyle = variant === 'won' ? 'rgba(255,194,31,0.12)' : 'rgba(217,58,43,0.12)';
   ctx.beginPath();
-  ctx.arc(rect.x + rect.w / 2, rect.y + rect.h * 0.5, rect.w * 0.46, 0, TAU);
+  ctx.arc(rect.x + rect.w / 2, rect.y + rect.h * 0.44, rect.w * 0.4, 0, TAU);
   ctx.fill();
 
-  for (let i = 0; i < 9; i += 1) {
-    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,122,26,0.35)' : 'rgba(217,58,43,0.28)';
-    ctx.fillRect(rect.x + 10 + i * 36, rect.y + 18, 16, rect.h - 36);
+  ctx.fillStyle = 'rgba(247,243,232,0.05)';
+  for (let i = 0; i < 6; i += 1) ctx.fillRect(rect.x + 18 + i * 56, rect.y + rect.h * 0.62, 22, 3);
+
+  ctx.strokeStyle = variant === 'won' ? 'rgba(127,212,255,0.5)' : 'rgba(217,58,43,0.55)';
+  ctx.lineWidth = 1.5;
+  roundRectPath(ctx, rect.x + 10, rect.y + 10, rect.w - 20, rect.h - 20, 16);
+  ctx.stroke();
+  void tick;
+}
+
+function drawPosterKeg(ctx, cx, cy, s, tick) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  const bodyW = 128 * s;
+  const bodyH = 156 * s;
+  const grad = ctx.createLinearGradient(-bodyW / 2, 0, bodyW / 2, 0);
+  grad.addColorStop(0, '#6b431f');
+  grad.addColorStop(0.32, '#a8713b');
+  grad.addColorStop(0.5, '#cfa268');
+  grad.addColorStop(0.72, '#9a6533');
+  grad.addColorStop(1, '#5f3b1b');
+  ctx.beginPath();
+  ctx.moveTo(-bodyW / 2, -bodyH / 2);
+  ctx.quadraticCurveTo(-bodyW * 0.6, 0, -bodyW / 2, bodyH / 2);
+  ctx.lineTo(bodyW / 2, bodyH / 2);
+  ctx.quadraticCurveTo(bodyW * 0.6, 0, bodyW / 2, -bodyH / 2);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#2a2119';
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(90,58,28,0.6)';
+  ctx.lineWidth = 1.4;
+  for (const dx of [-0.3, 0, 0.3]) {
+    ctx.beginPath();
+    ctx.moveTo(bodyW * dx * 0.8, -bodyH * 0.44);
+    ctx.quadraticCurveTo(bodyW * dx, 0, bodyW * dx * 0.8, bodyH * 0.44);
+    ctx.stroke();
   }
 
+  for (const bandY of [-0.38, 0, 0.38]) {
+    ctx.fillStyle = '#3a332a';
+    ctx.fillRect(-bodyW / 2 - 2, bodyH * bandY - 4, bodyW + 4, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillRect(-bodyW / 2 - 2, bodyH * bandY - 4, bodyW + 4, 2);
+  }
+
+  ctx.fillStyle = 'rgba(35,32,27,0.78)';
+  ctx.fillRect(-bodyW * 0.28, -bodyH * 0.1, bodyW * 0.56, bodyH * 0.2);
+  text(ctx, 'POWDER', 0, -bodyH * 0.015, 15 * s, BLAST, { align: 'center' });
+  text(ctx, 'DANGER', 0, bodyH * 0.075, 12 * s, CHALK, { align: 'center' });
+
+  ctx.fillStyle = '#8a6222';
+  ctx.fillRect(-bodyW * 0.12, -bodyH / 2 - 8 * s, bodyW * 0.24, 12 * s);
+
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 3.2;
+  ctx.strokeStyle = '#5c5242';
+  ctx.beginPath();
+  ctx.moveTo(0, -bodyH / 2 - 6 * s);
+  ctx.quadraticCurveTo(14 * s, -bodyH / 2 - 26 * s, 4 * s, -bodyH / 2 - 52 * s);
+  ctx.stroke();
+
+  const fxs = 4 * s;
+  const fyy = -bodyH / 2 - 54 * s;
+  const flick = 0.8 + 0.2 * Math.sin(tick * 0.12);
+  ctx.fillStyle = 'rgba(255,122,26,0.28)';
+  ctx.beginPath();
+  ctx.arc(fxs, fyy, 22 * s * flick, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = EMBER;
+  ctx.beginPath();
+  ctx.arc(fxs, fyy, 10 * s * flick, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = BLAST;
+  ctx.beginPath();
+  ctx.arc(fxs, fyy - 2 * s, 6 * s * flick, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = CHALK;
+  ctx.beginPath();
+  ctx.arc(fxs, fyy - 3 * s, 3 * s * flick, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPosterMedallion(ctx, x, y, r, bestChain, won) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, TAU);
+  ctx.fillStyle = won ? 'rgba(15,94,99,0.92)' : 'rgba(35,32,27,0.92)';
+  ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = BLAST;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, r - 8, 0, TAU);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(255,194,31,0.55)';
+  ctx.stroke();
+  text(ctx, 'BEST', x, y - r * 0.4, r * 0.3, 'rgba(247,243,232,0.75)', { align: 'center' });
+  const chain = `x${Math.max(0, Math.round(Number(bestChain) || 0))}`;
+  text(ctx, chain, x, y + r * 0.08, r * 0.62, CHALK, { align: 'center', maxWidth: r * 1.6 });
+  text(ctx, 'CHAIN', x, y + r * 0.58, r * 0.3, BLAST, { align: 'center' });
+  ctx.restore();
+}
+
+function drawWonArt(ctx, rect, tick, bestChain) {
+  ctx.save();
+  drawPosterBase(ctx, rect, tick, 'won');
   const cx = rect.x + rect.w / 2;
-  const cy = rect.y + rect.h * 0.47;
-  const bob = Math.sin(tick * 0.04) * 4;
-  ctx.save();
-  ctx.translate(cx, cy + bob);
-  const trophyR = rect.w * 0.4;
-  drawColossus(ctx, trophyR, tick + 30, 0.2, 1);
-  ctx.restore();
-
-  ctx.save();
-  ctx.globalAlpha = 0.55;
-  for (let i = 0; i < 5; i += 1) {
-    const a = (i / 5) * TAU + tick * 0.006;
-    sparkGlyph(ctx, cx + Math.cos(a) * rect.w * 0.4, cy + Math.sin(a) * rect.w * 0.38, 7 + (i % 2) * 3, i % 2 ? EMBER : BLAST);
-  }
-  ctx.restore();
-
-  text(ctx, 'THE COLOSSUS FALLS', cx, rect.y + 34, 26, INK, { align: 'center', maxWidth: rect.w - 40 });
-  text(ctx, 'EMBER QUAY HOLDS', cx, rect.y + rect.h - 40, 22, TEAL, { align: 'center' });
-  text(ctx, 'NINE BARRAGES, ONE CHAIN', cx, rect.y + rect.h - 18, 14, '#6a6054', { align: 'center' });
-
+  const kegY = rect.y + rect.h * 0.37;
+  drawPosterKeg(ctx, cx, kegY, 1.35, tick);
+  drawPosterMedallion(ctx, cx + rect.w * 0.27, rect.y + rect.h * 0.2, 44, bestChain, true);
+  text(ctx, 'THE COLOSSUS FALLS', cx, rect.y + 36, 25, CHALK, { align: 'center', maxWidth: rect.w - 40 });
+  text(ctx, 'EMBER QUAY HOLDS', cx, rect.y + rect.h - 76, 22, BLAST, { align: 'center', maxWidth: rect.w - 40 });
+  text(ctx, 'NINE BARRAGES, ONE CHAIN', cx, rect.y + rect.h - 50, 14, 'rgba(247,243,232,0.7)', { align: 'center', maxWidth: rect.w - 40 });
   ctx.lineWidth = 4;
   ctx.strokeStyle = INK;
   roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, 22);
@@ -146,104 +246,30 @@ function drawWonArt(ctx, rect, tick) {
   ctx.restore();
 }
 
-function drawLostArt(ctx, rect, tick) {
+function drawLostArt(ctx, rect, tick, bestChain) {
   ctx.save();
-  ctx.beginPath();
-  roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, 22);
-  ctx.fillStyle = '#2b241e';
-  ctx.fill();
-  ctx.clip();
-
-  ctx.fillStyle = 'rgba(217,58,43,0.16)';
-  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-
-  const doorW = rect.w * 0.62;
-  const doorH = rect.h * 0.46;
-  const dx = rect.x + (rect.w - doorW) / 2;
-  const dy = rect.y + rect.h * 0.34;
-  ctx.fillStyle = '#b39b6d';
-  ctx.fillRect(dx - 14, dy - 14, doorW + 28, doorH + 28);
-  ctx.fillStyle = TEAL;
-  roundRectPath(ctx, dx, dy, doorW, doorH, 10);
-  ctx.fill();
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = '#0a3f43';
-  ctx.stroke();
-
-  ctx.fillStyle = SOOT;
-  ctx.beginPath();
-  ctx.moveTo(dx + doorW * 0.18, dy + doorH * 0.05);
-  ctx.lineTo(dx + doorW * 0.46, dy + doorH * 0.4);
-  ctx.lineTo(dx + doorW * 0.62, dy + doorH * 0.22);
-  ctx.lineTo(dx + doorW * 0.86, dy + doorH * 0.95);
-  ctx.lineTo(dx + doorW * 0.5, dy + doorH * 0.74);
-  ctx.lineTo(dx + doorW * 0.3, dy + doorH * 1.02);
-  ctx.lineTo(dx + doorW * 0.12, dy + doorH * 0.58);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = '#ff7a1a';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(dx + doorW * 0.18, dy + doorH * 0.05);
-  ctx.lineTo(dx + doorW * 0.46, dy + doorH * 0.4);
-  ctx.lineTo(dx + doorW * 0.62, dy + doorH * 0.22);
-  ctx.lineTo(dx + doorW * 0.86, dy + doorH * 0.95);
-  ctx.stroke();
-
-  ctx.fillStyle = '#d9c9a3';
-  ctx.beginPath();
-  ctx.arc(dx + doorW * 0.14, dy + doorH * 0.2, doorW * 0.11, 0, TAU);
-  ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = INK;
-  ctx.stroke();
-  ctx.fillStyle = INK;
-  ctx.fillRect(dx + doorW * 0.08, dy + doorH * 0.22, doorW * 0.04, doorH * 0.22);
-  ctx.beginPath();
-  ctx.arc(dx + doorW * 0.14, dy + doorH * 0.2, doorW * 0.03, 0, TAU);
-  ctx.fill();
-
-  const imps = [
-    { x: rect.x + rect.w * 0.24, y: rect.y + rect.h * 0.86, r: 26, phase: 0 },
-    { x: rect.x + rect.w * 0.5, y: rect.y + rect.h * 0.9, r: 32, phase: 2 },
-    { x: rect.x + rect.w * 0.76, y: rect.y + rect.h * 0.85, r: 24, phase: 4 },
-  ];
-  for (const imp of imps) {
-    const hop = Math.abs(Math.sin(tick * 0.08 + imp.phase)) * 12;
-    const y = imp.y - hop;
-    ctx.save();
-    ctx.translate(imp.x, y);
-    ctx.fillStyle = SOOT;
+  drawPosterBase(ctx, rect, tick, 'lost');
+  const cx = rect.x + rect.w / 2;
+  const kegY = rect.y + rect.h * 0.37;
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  drawPosterKeg(ctx, cx - 14, kegY + 10, 1.25, tick);
+  ctx.restore();
+  drawPosterMedallion(ctx, cx + rect.w * 0.28, rect.y + rect.h * 0.2, 42, bestChain, false);
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  for (let i = 0; i < 4; i += 1) {
+    const sx = rect.x + rect.w * (0.18 + i * 0.22);
+    const sy = rect.y + rect.h * 0.6 + Math.sin(tick * 0.03 + i) * 6;
+    ctx.fillStyle = 'rgba(58,51,42,0.8)';
     ctx.beginPath();
-    ctx.arc(0, 0, imp.r, 0, TAU);
+    ctx.arc(sx, sy, 18 + i * 3, 0, TAU);
     ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-imp.r * 0.7, -imp.r * 0.5);
-    ctx.lineTo(-imp.r * 1.1, -imp.r * 1.2);
-    ctx.lineTo(-imp.r * 0.25, -imp.r * 0.85);
-    ctx.moveTo(imp.r * 0.7, -imp.r * 0.5);
-    ctx.lineTo(imp.r * 1.1, -imp.r * 1.2);
-    ctx.lineTo(imp.r * 0.25, -imp.r * 0.85);
-    ctx.fill();
-    ctx.fillStyle = EMBER;
-    for (const s of [-1, 1]) {
-      ctx.beginPath();
-      ctx.arc(s * imp.r * 0.36, -imp.r * 0.1, imp.r * 0.15, 0, TAU);
-      ctx.fill();
-    }
-    ctx.strokeStyle = BLAST;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(0, imp.r * 0.22, imp.r * 0.42, 0.15 * Math.PI, 0.85 * Math.PI);
-    ctx.stroke();
-    ctx.restore();
   }
-
-  text(ctx, 'THE VAULT RUNS DRY', rect.x + rect.w / 2, rect.y + 34, 26, CHALK, { align: 'center', maxWidth: rect.w - 40 });
-  text(ctx, 'SOOTKIN TAKE THE QUAY', rect.x + rect.w / 2, rect.y + rect.h - 40, 20, VAULT, { align: 'center' });
-  text(ctx, 'RELIGHT THE FUSES', rect.x + rect.w / 2, rect.y + rect.h - 18, 14, 'rgba(247,243,232,0.7)', { align: 'center' });
-
+  ctx.restore();
+  text(ctx, 'THE VAULT RUNS DRY', cx, rect.y + 36, 24, CHALK, { align: 'center', maxWidth: rect.w - 40 });
+  text(ctx, 'SOOTKIN TAKE THE QUAY', cx, rect.y + rect.h - 76, 21, VAULT, { align: 'center', maxWidth: rect.w - 40 });
+  text(ctx, 'RELIGHT THE FUSES', cx, rect.y + rect.h - 50, 14, 'rgba(247,243,232,0.7)', { align: 'center', maxWidth: rect.w - 40 });
   ctx.lineWidth = 4;
   ctx.strokeStyle = INK;
   roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, 22);
@@ -352,11 +378,9 @@ export function drawResults(ctx, state, view) {
   const tick = Number.isFinite(state.tick) ? state.tick : 0;
 
   ctx.save();
-  ctx.fillStyle = 'rgba(14,12,10,0.78)';
-  ctx.fillRect(0, 0, 1280, 800);
 
-  if (won) drawWonArt(ctx, RESULTS_LAYOUT.art, tick);
-  else drawLostArt(ctx, RESULTS_LAYOUT.art, tick);
+  if (won) drawWonArt(ctx, RESULTS_LAYOUT.art, tick, state.bestChain);
+  else drawLostArt(ctx, RESULTS_LAYOUT.art, tick, state.bestChain);
 
   const p = RESULTS_LAYOUT.plaque;
   roundRectPath(ctx, p.x, p.y, p.w, p.h, 24);
@@ -371,10 +395,10 @@ export function drawResults(ctx, state, view) {
   text(ctx, won ? 'RUN COMPLETE' : 'VAULT LOST', p.x + 48, p.y + 34, 18, won ? TEAL : VAULT);
 
   const gx = p.x + 48;
-  const gy = p.y + 150;
+  const gy = p.y + 108;
   const gradeColor = { S: EMBER, A: BLAST, B: TEAL, C: '#8a6222', D: VAULT }[grade] || INK;
-  text(ctx, grade, gx, gy, 132, gradeColor, { align: 'left' });
-  text(ctx, 'GRADE', gx + 2, gy + 82, 15, '#6a6054');
+  text(ctx, grade, gx, gy, 118, gradeColor, { align: 'left' });
+  text(ctx, 'GRADE', gx + 2, gy + 74, 15, '#6a6054');
 
   const sx = p.x + 208;
   text(ctx, 'SCORE', sx, p.y + 78, 16, '#6a6054');
@@ -386,13 +410,13 @@ export function drawResults(ctx, state, view) {
     text(ctx, 'NEW BEST', sx + 319, p.y + 84, 16, CHALK, { align: 'center' });
   }
 
-  const line = GRADE_LINES[grade] || '';
-  text(ctx, line, sx, p.y + 162, 16, '#3a332a', { weight: 600, family: BODY, maxWidth: p.w - 280 });
+  const line = verdictLine(won, grade);
+  text(ctx, line, sx, p.y + 158, 16, '#3a332a', { weight: 600, family: BODY, maxWidth: p.w - 280 });
 
   const tiles = statValues(state);
   const tileGap = 8;
   const tileW = (p.w - 96 - tileGap * (tiles.length - 1)) / tiles.length;
-  const tileY = p.y + 186;
+  const tileY = p.y + 178;
   tiles.forEach((tile, i) => {
     const tx = p.x + 48 + i * (tileW + tileGap);
     roundRectPath(ctx, tx, tileY, tileW, 66, 10);
@@ -413,22 +437,22 @@ export function drawResults(ctx, state, view) {
   const meta = `${diff ? diff.name : String(state.diffKey || 'BLAZE').toUpperCase()} - SEED ${state.seed ?? 0} - ${clock(
     state.tick,
   )} - ${deltaText}`;
-  text(ctx, meta, p.x + 48, p.y + 282, 17, delta > 0 ? TEAL : delta < 0 ? VAULT : '#3a332a', { maxWidth: p.w - 96 });
+  text(ctx, meta, p.x + 48, p.y + 268, 17, delta > 0 ? TEAL : delta < 0 ? VAULT : '#3a332a', { maxWidth: p.w - 96 });
 
   ctx.fillStyle = 'rgba(35,32,27,0.16)';
-  ctx.fillRect(p.x + 48, p.y + 300, p.w - 96, 1.5);
+  ctx.fillRect(p.x + 48, p.y + 284, p.w - 96, 1.5);
 
   const leftX = p.x + 48;
   const rightX = p.x + 452;
-  drawGradeTable(ctx, leftX, p.y + 322, 380, score, grade);
-  drawHistory(ctx, rightX, p.y + 322, 356, v.history);
-  drawFeats(ctx, leftX, p.y + 384, p.w - 96, v.feats || state.feats);
+  drawGradeTable(ctx, leftX, p.y + 306, 380, score, grade);
+  drawHistory(ctx, rightX, p.y + 306, 356, v.history);
+  drawFeats(ctx, leftX, p.y + 422, p.w - 96, v.feats || state.feats);
 
   const charmKeys = Array.isArray(state.charms) ? state.charms : [];
   const pickedNames = charmKeys.map((key) => (CHARM_DEFS.get(key) || { name: '?' }).name);
   const offersSeen = Number.isFinite(state.stats && state.stats.offersSeen) ? state.stats.offersSeen : charmKeys.length * 3;
   const pickLine = `${charmKeys.length} PICKED FROM ${offersSeen} OFFERS`;
-  const buildY = p.y + p.h - 30;
+  const buildY = p.y + p.h - 16;
   text(ctx, 'YOUR BUILD', leftX, buildY - 20, 13, '#6a6054');
   text(ctx, pickLine, leftX + 104, buildY - 20, 15, TEAL);
   text(ctx, pickedNames.length > 0 ? pickedNames.join(' - ') : 'NO CHARMS CLAIMED', leftX, buildY, 17, INK, {
@@ -477,4 +501,18 @@ export function drawResults(ctx, state, view) {
 function wonState(state) {
   if (state.stats && typeof state.stats.won === 'boolean') return state.stats.won;
   return state.mode === 'won' || state.won === true;
+}
+
+const LOSS_LINES = Object.freeze([
+  'Sootkin boil over the rails. Bank one more keg on the gate line.',
+  'The Vault went dark before the last fuse. Pace the chain tighter.',
+  'A hard quay, a dry Vault. Let the kegs chain before you spend.',
+  'The tide came in and took the quay. Tune the fuses for next run.',
+]);
+
+// Verdict copy follows the outcome: a loss never quotes a triumph line.
+function verdictLine(won, grade) {
+  if (won) return GRADE_LINES[grade] || GRADE_LINES.B;
+  const idx = Math.max(0, ['S', 'A', 'B', 'C'].indexOf(grade));
+  return LOSS_LINES[Math.min(idx, LOSS_LINES.length - 1)];
 }

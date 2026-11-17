@@ -5,7 +5,7 @@ export const MAX_HISTORY = 3;
 
 export const DEFAULT_SETTINGS = Object.freeze({ music: 0.8, sfx: 0.9, shake: 0.7 });
 
-export const GRADE_THRESHOLDS = Object.freeze([30000, 22000, 15000, 8000]);
+export const GRADE_THRESHOLDS = Object.freeze([100000, 65000, 35000, 15000]);
 
 export const GRADE_LINES = Object.freeze({
   S: 'A perfect storm of powder. Ember Quay will sing of this chain.',

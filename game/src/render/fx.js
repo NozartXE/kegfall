@@ -6,7 +6,7 @@ import { CONDENSED } from './fit.js';
 const TAU = Math.PI * 2;
 const KEG_DEFS = new Map(KEGS.map((def) => [def.key, def]));
 const MAX_SCORCHES = 40;
-const RING_TICKS = 46;
+const RING_TICKS = 20;
 const SPARK_TICKS = 54;
 const PUFF_TICKS = 78;
 const BASE_FLOAT_TICKS = 50;
@@ -503,23 +503,18 @@ function drawRings(ctx, view) {
     const r = Math.max(1, ring.r);
     const cold = ring.kind === 'frost';
     const stroke = cold ? FROST : t < 0.45 ? EMBER : '#c4471f';
-    ctx.globalAlpha = Math.max(0, fade);
-    ctx.lineWidth = 9 * (0.4 + fade * 0.8);
+    ctx.save();
+    ctx.globalAlpha = clamp01(0.5 * fade);
+    ctx.lineWidth = 6 * (0.4 + fade * 0.8);
     ctx.strokeStyle = stroke;
     circle(ctx, ring.x, ring.y, r);
     ctx.stroke();
-    ctx.lineWidth = Math.max(1.5, 8 * (0.2 + fade * 0.6));
+    ctx.lineWidth = Math.max(1.2, 5 * (0.2 + fade * 0.6));
     ctx.strokeStyle = cold ? '#eafbff' : BLAST;
+    ctx.globalAlpha = clamp01(0.35 * fade);
     circle(ctx, ring.x, ring.y, Math.max(1, r - 4));
     ctx.stroke();
-    if (ring.chain >= 8) {
-      ctx.globalAlpha = Math.max(0, fade * 0.6);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = CHALK;
-      circle(ctx, ring.x, ring.y, Math.max(1, r * 0.72));
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 }
 
@@ -653,13 +648,21 @@ export function drawFields(ctx, state) {
     const edge = clamp01((Number(f.ticksLeft) || 0) / 24);
     if (f.kind === 'burn') {
       const grad = ctx.createRadialGradient(f.x, f.y, r * 0.1, f.x, f.y, r);
-      grad.addColorStop(0, `rgba(255,194,31,${0.46 * edge})`);
-      grad.addColorStop(0.45, `rgba(255,122,26,${0.3 * edge})`);
-      grad.addColorStop(0.8, `rgba(196,71,31,${0.22 * edge})`);
+      grad.addColorStop(0, `rgba(255,194,31,${0.13 * edge})`);
+      grad.addColorStop(0.5, `rgba(255,122,26,${0.1 * edge})`);
+      grad.addColorStop(0.85, `rgba(196,71,31,${0.06 * edge})`);
       grad.addColorStop(1, 'rgba(122,42,24,0)');
       ctx.fillStyle = grad;
       ellipse(ctx, f.x, f.y, r, r * 0.7);
       ctx.fill();
+      ctx.strokeStyle = `rgba(196,71,31,${0.55 * edge})`;
+      ctx.lineWidth = 1.8;
+      ellipse(ctx, f.x, f.y, r * 0.92, r * 0.64);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255,122,26,${0.35 * edge})`;
+      ctx.lineWidth = 1;
+      ellipse(ctx, f.x, f.y, r * 0.7, r * 0.49);
+      ctx.stroke();
       for (let i = 0; i < 7; i += 1) {
         const a = (i / 7) * TAU + Math.sin(tick * 0.05 + i) * 0.3;
         const d = r * (0.3 + 0.45 * ((i * 37) % 10) / 10);

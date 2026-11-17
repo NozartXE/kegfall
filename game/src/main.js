@@ -2,7 +2,7 @@
 
 import { createRun, stepRun } from './sim.js';
 import { drainEvents } from './announce.js';
-import { drawWorld, applyShake } from './render/scene.js';
+import { drawWorld, drawDim } from './render/scene.js';
 import { drawHud } from './render/hud.js';
 import { drawBanner } from './render/banner.js';
 import { drawDraft } from './render/charms.js';
@@ -511,9 +511,9 @@ function render() {
 
   if (app.mode === 'draft') {
     renderWorld(ctx, state, app.view);
+    drawDim(ctx, 0.62);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    applyShake(ctx, app.view);
     drawDraft(ctx, state, app.view);
     ctx.restore();
     return;
@@ -521,6 +521,7 @@ function render() {
 
   if (app.mode === 'results') {
     renderWorld(ctx, state, app.view);
+    drawDim(ctx, 0.78);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     drawResults(ctx, state, { ...app.view, best: app.view.best || (app.save && app.save.best) || 0, history: app.view.history });
