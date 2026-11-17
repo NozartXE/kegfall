@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KEGFALL - One Spark, Forty Kegs</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<!-- Scope: 4 keg kinds - 5 sootkin + the Cinder Colossus - 9 barrages - 12 firework charms - 3 difficulties - endless AFTERGLOW. Reviewer note: KEGFALL is a chain-detonation defense game built by an AI agent for NozartXE, make.fun best-game-01. Place kegs on the quay, light one fuse, and chained detonations clear the wave: volatile Powder Imps and armed kegs pass the blast along, and every detonation inside the chain window raises the CHAIN multiplier. WIN: hold all 9 barrages and drop the Cinder Colossus. LOSE: the Sootkin crack the Vault (10 HP). R restarts a run. Plain canvas 2D + DOM overlays + WebAudio; no library, no network. The sim (src/sim.js and friends) has no DOM code and runs headless in tools/balance.mjs; tools verify the staged screenshots. -->
+<div id="stage">
+  <canvas id="board" width="1280" height="800" aria-label="KEGFALL play field: Ember Quay keg board"></canvas>
+
+  <section id="title-screen" class="overlay" aria-labelledby="wordmark">
+    <div class="title-card">
+      <p id="rule-scope" class="scope"><span>4 keg kinds</span><span>5 sootkin + the Cinder Colossus</span><span>9 barrages</span><span>12 firework charms</span><span>3 difficulties</span><span>endless AFTERGLOW</span></p>
+      <h1 id="wordmark">KEGFALL</h1>
+      <div id="title-rules" class="rules-table">
+        <div class="rules-row"><span class="icon keg-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="7" y="6" width="18" height="22" rx="4" fill="#ff7a1a" stroke="#23201b" stroke-width="2.5"/><path d="M7 11h18M7 12.5h18" stroke="#23201b" stroke-width="1.6"/><path d="M16 6v-3" stroke="#ffc21f" stroke-width="2.5" stroke-linecap="round"/></svg></span><span class="rule-key">PLACE</span><span class="rule-text">Spend SPARK to set kegs on the quay.</span></div>
+        <div class="rules-row"><span class="icon fuse-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 26c6-2 4-8 10-9s4-7 8-9" fill="none" stroke="#d9c9a3" stroke-width="3" stroke-linecap="round"/><circle cx="26" cy="8" r="4" fill="#ffc21f"/><circle cx="26" cy="8" r="2" fill="#ff7a1a"/></svg></span><span class="rule-key">IGNITE</span><span class="rule-text">Light one fuse: the CHAIN does the rest.</span></div>
+        <div class="rules-row"><span class="icon chain-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><text x="4" y="23" font-size="16" font-weight="800" fill="#ffc21f" font-family="Arial Narrow, sans-serif">x12</text></svg></span><span class="rule-key">CHAIN</span><span class="rule-text">Blasts arm kegs; every detonation in the window multiplies score.</span></div>
+        <div class="rules-row"><span class="icon strike-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M18 4L9 18h6l-1 10 9-14h-6z" fill="#7fd4ff" stroke="#23201b" stroke-width="2"/></svg></span><span class="rule-key">STRIKE</span><span class="rule-text">Direct SPARK STRIKE blast, then a 6 s cooldown.</span></div>
+        <div class="rules-row win-row"><span class="icon win-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 4h20v12a10 10 0 0 1-20 0z" fill="#ffc21f" stroke="#23201b" stroke-width="2.5"/><path d="M16 8v8M12 12h8" stroke="#23201b" stroke-width="2.5"/></svg></span><span class="rule-key">WIN</span><span class="rule-text">Hold all 9 barrages and drop the Cinder Colossus.</span></div>
+        <div class="rules-row lose-row"><span class="icon lose-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 5l11 20H5z" fill="#d93a2b" stroke="#23201b" stroke-width="2.5"/><path d="M16 12v7" stroke="#f7f3e8" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="22" r="1.8" fill="#f7f3e8"/></svg></span><span class="rule-key">LOSE</span><span class="rule-text">The Sootkin crack the Vault (10 HP). R restarts a run.</span></div>
+      </div>
+      <div class="play-row">
+        <button id="play-button" class="big" type="button">PLAY</button>
+        <span id="title-best">BEST 0</span>
+        <span id="feats-count">FEATS 0/6</span>
+      </div>
+      <p id="start-hint">Press PLAY or ENTER to light the first fuse.</p>
+      <div id="difficulty-picker" class="picker" role="group" aria-label="Difficulty">
+        <button type="button" class="diff-button" data-diff="kindling" aria-pressed="false">KINDLING</button>
+        <button type="button" class="diff-button" data-diff="blaze" aria-pressed="true">BLAZE</button>
+        <button type="button" class="diff-button" data-diff="inferno" aria-pressed="false">INFERNO</button>
+      </div>
+      <p id="afterglow-line">AFTERGLOW: endless mode waits after your first win.</p>
+      <div class="links">
+        <button id="howto-button" type="button">HOW TO PLAY</button>
+        <button id="options-button" type="button">OPTIONS</button>
+        <button id="almanac-button" type="button">ALMANAC</button>
+      </div>
+      <div id="keycaps">
+        <span class="keycap">1-4</span><span class="keycap-label">kegs</span>
+        <span class="keycap">CLICK</span><span class="keycap-label">place / ignite</span>
+        <span class="keycap">U</span><span class="keycap-label">upgrade</span>
+        <span class="keycap">SPACE</span><span class="keycap-label">strike</span>
+        <span class="keycap">P</span><span class="keycap-label">pause</span>
+        <span class="keycap">F</span><span class="keycap-label">fast</span>
+        <span class="keycap">M</span><span class="keycap-label">mute</span>
+        <span class="keycap">R</span><span class="keycap-label">restart</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="howto-screen" class="overlay hidden" aria-labelledby="howto-heading">
+    <div class="sheet">
+      <h2 id="howto-heading">HOW TO PLAY</h2>
+      <div class="panel-body" id="howto-body"></div>
+      <button class="back-button" type="button" data-back>BACK</button>
+    </div>
+  </section>
+
+  <section id="options-screen" class="overlay hidden" aria-labelledby="options-heading">
+    <div class="sheet">
+      <h2 id="options-heading">OPTIONS</h2>
+      <div class="panel-body" id="options-body">
+        <label class="slider-row" for="music-slider"><span>MUSIC</span><input id="music-slider" type="range" min="0" max="1" step="0.05" value="0.8"><output id="music-value" for="music-slider">80%</output></label>
+        <label class="slider-row" for="sfx-slider"><span>SFX</span><input id="sfx-slider" type="range" min="0" max="1" step="0.05" value="0.9"><output id="sfx-value" for="sfx-slider">90%</output></label>
+        <label class="slider-row" for="shake-slider"><span>SCREEN SHAKE</span><input id="shake-slider" type="range" min="0" max="1" step="0.05" value="0.7"><output id="shake-value" for="shake-slider">70%</output></label>
+      </div>
+      <button class="back-button" type="button" data-back>BACK</button>
+    </div>
+  </section>
+
+  <section id="almanac-screen" class="overlay hidden" aria-labelledby="almanac-heading">
+    <div class="sheet wide">
+      <h2 id="almanac-heading">ALMANAC</h2>
+      <div class="panel-body" id="almanac-body"></div>
+      <button class="back-button" type="button" data-back>BACK</button>
+    </div>
+  </section>
+
+  <section id="pause-screen" class="overlay hidden" aria-labelledby="pause-heading">
+    <div class="sheet narrow">
+      <h2 id="pause-heading">PAUSED</h2>
+      <div class="panel-body" id="pause-body">
+        <p>Fuses are held. The quay waits.</p>
+      </div>
+      <button id="resume-button" type="button">RESUME</button>
+    </div>
+  </section>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
